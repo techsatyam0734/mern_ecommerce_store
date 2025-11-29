@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 8000;
 
 
 app.get("/", (req, res) => {
-  res.send("Api working !");
+  res.send("Api working successfully!");
 });
 
 app.listen(PORT, async () => {
