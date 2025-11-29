@@ -1,5 +1,6 @@
 import { pool } from "../database/db.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export const registerUser = async (req, res) => {
   try {
@@ -8,7 +9,7 @@ export const registerUser = async (req, res) => {
     if (!fname || !lname || !email || !password) {
       res.status(400).json({
         success: false,
-        message: "All fields are required !",
+        message: "All register fields are required !",
       });
     }
 
@@ -43,6 +44,68 @@ export const registerUser = async (req, res) => {
     });
   } catch (error) {
     console.log("Unable to create user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All login fields are required",
+      });
+    }
+
+    const [rows] = await pool.query(`SELECT * FROM users WHERE email = ?`, [
+      email,
+    ]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = rows[0];
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successfull",
+      token,
+      user: {
+        id: user.id,
+        fname: user.fname,
+        lname: user.lname,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Login Error", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
