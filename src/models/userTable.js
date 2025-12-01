@@ -13,9 +13,8 @@ export const createUserTable = async () => {
         );
     `;
     await pool.query(query);
-    console.log("User Table created successfully!");
   } catch (error) {
     console.error("❌ Failed To Create Users Table:", error);
-    process.exit(1);
+    throw error;
   }
 };
